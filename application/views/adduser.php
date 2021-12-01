@@ -34,6 +34,13 @@
                           <option value="IA">InActive</option>
                         </select>
                       </div>
+                      <div class="form-group">
+                        <label for="exampleSelectGender">User Type</label>
+                        <select class="form-control" id="user_type" name="user_type">
+                          <option value="user">User</option>
+                          <option value="astrologer">Astrologer</option>
+                        </select>
+                      </div>
                       <!-- <div class="form-group">
                         <label>File upload</label>
                         <input type="file" name="img[]" class="file-upload-default">
