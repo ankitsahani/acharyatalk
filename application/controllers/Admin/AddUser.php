@@ -29,7 +29,8 @@ public function __construct(){
                'email'=>$this->input->post('email'),
                'mobile'=>$this->input->post('email'),
                'gender'=>$this->input->post('gender'),
-               'status'=>$this->input->post('status')
+               'status'=>$this->input->post('status'),
+               'user_type'=>$this->input->post('user_type')
             );
        $data['newuser']= $this->user_model->add_user($users);
        if($data['newuser']){
