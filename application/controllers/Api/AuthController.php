@@ -10,7 +10,7 @@ class AuthController extends REST_Controller
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('user_model');
+        $this->load->model('user_model_api');
     }
     /**
      * User Register
@@ -47,7 +47,7 @@ class AuthController extends REST_Controller
                     'status' => 'A',
                 ];
            
-                $output = $this->user_model->insert_user($insert_data);
+                $output = $this->user_model_api->insert_user($insert_data);
                 if($output)
                 {
                     $message = [
@@ -74,7 +74,7 @@ class AuthController extends REST_Controller
     public function login_post()
     {
         $this->form_validation->set_rules('type', 'Mobile Or Email', 'trim|required');
-        $this->form_validation->set_rules('password', 'Password', 'required|max_length[100]');
+        $this->form_validation->set_rules('login_type', 'Mobile=>M Or Email=>E', 'trim|required');
         if ($this->form_validation->run() == FALSE)
         {
             $message = array(
@@ -87,29 +87,92 @@ class AuthController extends REST_Controller
         else
         {
         $email=$this->post('type');
-        $password= $this->post('password');
-        $user = $this->user_model->user_login($email,$password);
-        //print_r($user);die;
-        if ($user != null) {
-            $tokenData = array();
-            $tokenData['id'] = $user->id;
-            $response = Authorization::generateToken($tokenData);
-            $return_data = [
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'mobile' => $user->mobile,
-                    'token'=> $response,
-                ];
 
-                $message = [
-                    'status' => REST_Controller::HTTP_OK,
-                    'message' => "User login successfully",
-                    'data' => $return_data,
+        $user_exist = $this->user_model_api->check_user_exist($email);
+
+        if($user_exist == FALSE ){
+           date_default_timezone_set('Asia/Kolkata');
+            if($this->post('login_type') == "M"){
+                $insert_data = [
+                    'mobile' => $email,
+                    'created_at' => date('Y-m-d H:i'),
+                    'status' => 'A',
                 ];
-                $this->set_response($message, REST_Controller::HTTP_OK);
-            return;
-        } 
-        else
+           
+                $output = $this->user_model_api->insert_user($insert_data);
+                if($output)
+                {
+                    $message = [
+                        'status' => REST_Controller::HTTP_OK,
+                        'message' => "User registration successful."
+                    ];
+                    $this->response($message, REST_Controller::HTTP_OK);
+                } else
+                {
+                    $message = [
+                        'status' => REST_Controller::HTTP_NOT_FOUND,
+                        'message' => "Something went to wrong. Please try again later."
+                    ];
+                    $this->response($message, REST_Controller::HTTP_NOT_FOUND);
+                }
+            }else{
+                $insert_data = [
+                    'email' => $email,
+                    'created_at' => date('Y-m-d H:i'),
+                    'status' => 'A',
+                ];
+           
+                $output = $this->user_model->insert_user($insert_data);
+                if($output)
+                {
+                    $message = [
+                        'status' => REST_Controller::HTTP_OK,
+                        'message' => "User registration successful."
+                    ];
+                    $this->response($message, REST_Controller::HTTP_OK);
+                } else
+                {
+                    $message = [
+                        'status' => REST_Controller::HTTP_NOT_FOUND,
+                        'message' => "Something went to wrong. Please try again later."
+                    ];
+                    $this->response($message, REST_Controller::HTTP_NOT_FOUND);
+                }
+            }
+                
+                
+        }else{
+           $user = $this->user_model_api->user_login($email);
+        
+            if ($user != null) {
+                $tokenData = array();
+                $tokenData['id'] = $user->id;
+                $response = Authorization::generateToken($tokenData);
+                if($user->email){
+                    $return_data = [
+                        //'name' => $user->name,
+                        'email' => $user->email,
+                       // 'mobile' => $user->mobile,
+                        'token'=> $response,
+                    ];
+                }else{
+                   $return_data = [
+                        //'name' => $user->name,
+                        //'email' => $user->email,
+                        'mobile' => $user->mobile,
+                        'token'=> $response,
+                    ]; 
+                }
+                
+
+                    $message = [
+                        'status' => REST_Controller::HTTP_OK,
+                        'message' => "User login successfully",
+                        'data' => $return_data,
+                    ];
+                    $this->set_response($message, REST_Controller::HTTP_OK);
+                return; 
+            }else
             {
                 $message = [
                     'status' => FALSE,
@@ -119,6 +182,7 @@ class AuthController extends REST_Controller
             }
        }
     }
+}
 
     /**
      * User List API
@@ -134,7 +198,7 @@ class AuthController extends REST_Controller
             $token = Authorization::validateToken($headers['Authorization']);
         
             if ($token != false) {
-                $users = ($id != null) ? $this->user_model->getUsers($id) : $this->user_model->allUsers();
+                $users = ($id != null) ? $this->user_model_api->getUsers($id) : $this->user_model_api->allUsers();
                 $response = [];
                 foreach($users as $user){
                     $res['name']   = $user->name;
